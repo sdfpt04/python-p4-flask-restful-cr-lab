@@ -17,11 +17,36 @@ db.init_app(app)
 api = Api(app)
 
 class Plants(Resource):
-    pass
+    def get(self):
+        plants = Plant.query.all()
+        return jsonify([plant.serialize() for plant in plants])
+
+    def post(self):
+        data = request.json
+        name = data.get('name')
+        price = data.get('price')
+        # Check if the 'name' and 'price' fields are provided
+        if not name or not price:
+            return jsonify({'error': 'Name and Price are required fields'}), 400
+        # Set a default image if not provided
+        image = data.get('image', 'default.jpg')
+        new_plant = Plant(name=name, image=image, price=price)
+        db.session.add(new_plant)
+        db.session.commit()
+        return jsonify(new_plant.serialize()), 201
+
 
 class PlantByID(Resource):
-    pass
-        
+    def get(self, id):
+        plant = Plant.query.get(id)
+        if plant:
+            return jsonify(plant.serialize())
+        else:
+            return jsonify({'error': 'Plant not found'}), 404
+
+api.add_resource(Plants, '/plants')
+api.add_resource(PlantByID, '/plants/<int:id>')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
+
